@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Snake Game</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script type="text/javascript" language="javascript">
+		var xmax = 20, ymax = 20;
+		var snake = [73,72,71,70];
+		var direction = 'left';
+		var speed = 300, cherryCount=0;
+		var gameInterval;
+		jQuery(function(){
+			generateConsole();
+			generateSnake();
+			generateCherry();
+			jQuery('#drpSpeed').val(300);
+		});
+		function changeDirection(keycode){
+			if(direction != 'left' && keycode == 37){
+				direction = 'right';
+			} else if (direction != 'right' && keycode == 39){
+				direction = 'left';
+			} else if (direction != 'up' && keycode == 40){
+				direction = 'down';
+			} else if (direction != 'down' && keycode == 38){
+				direction = 'up';
+			}
+		}
+		function generateConsole(){
+			jQuery('#tbl').html('');
+			for(var y=0; y<ymax; y++){
+				var otr = jQuery('<tr></tr>');
+				for(var x=0; x<xmax; x++){
+					var otd = jQuery('<td></td>'); 
+					otr.append(jQuery(otd));
+				}
+				jQuery('#tbl').append(jQuery(otr));
+			}
+		}
+		function generateSnake(){
+			jQuery('#tbl').find('td.snake').removeClass('snake');
+			var len=snake.length;
+			for(var s=0;s<len; s++){
+				getTD(snake[s]).addClass('snake');
+			}
+		}
+		function generateCherry(){
+			var newCherry = Math.floor(Math.random()*(xmax*ymax));
+			if(jQuery.inArray(newCherry,snake) == -1){
+				Cherry = newCherry;
+				jQuery('td.cherry').removeClass('cherry');
+				getTD(Cherry).addClass('cherry');
+			} else {
+				generateCherry();
+			}
+		}
+		function getTD(i){
+			if(i>=0 && i<(xmax*ymax)){
+				var tr = Math.floor(i/xmax);
+				var td = i%xmax;
+				var oTd = jQuery('#tbl').find('tr').eq(tr).find('td').eq(td);
+				return oTd;
+			} else {
+				return false;
+			}
+		}
+		function startGame(){
+			runSnake();
+			jQuery(document).keydown(function(e){changeDirection(e.keyCode);});
+		}
+		function runSnake() {
+			var first = snake[0];
+			var x = first%xmax;
+			var y = Math.floor(first/xmax);
+			var next = first;
+			if(direction == 'left') {
+				if(x == (xmax-1)) x = 0;
+				else x = x +1;
+				next = (y*xmax)+x;
+			} else if(direction == 'right') {
+				if(x == 0) x = xmax-1;
+				else x = x-1;
+				next = (y*xmax)+x;
+			} else if(direction == 'up') {
+				if(y == 0) y = ymax-1;
+				else y = y-1;
+				next = (y*xmax)+x;
+			} else if(direction == 'down') {
+				if(y == (ymax-1)) y = 0;
+				else y = y+1;
+				next = (y*xmax)+x;
+			}
+			if(next != Cherry)
+				snake.pop();
+			if(jQuery.inArray(next, snake) >= 0){	
+				gameOver();
+			} else {	
+				snake.unshift(next);
+				if(next == Cherry) {
+					updateScore();
+					generateCherry();
+				}
+				generateSnake();
+				gameInterval = setTimeout(runSnake,speed);
+			}	
+		}
+		function updateScore(){
+			cherryCount++;
+			jQuery('#spCherryCount').html(cherryCount);
+		}
+		function stopGame(){
+			if(gameInterval)
+				clearTimeout(gameInterval);
+		}
+		function gameOver(){
+			stopGame();
+			snake = [73,72,71,70];
+			direction = 'left';
+			generateSnake();
+			speed=300;
+			jQuery('#drpSpeed').val(300);
+			alert("Game Over!\nCherry count: " + cherryCount);
+			cherryCount=0;
+			jQuery('#spCherryCount').html(cherryCount);
+		}
+	</script>
+	<style>
+		html, body {
+		    font-family: Tahoma;
+		    font-size: 11px;
+		}
+		div#page {
+		    margin: 0px auto 0px auto;
+			width: 600px;
+		}
+		#tbl {
+			margin: 0px auto 0px auto;
+		}
+		.grid {
+		    border: 1px solid #CCCCCC;
+		}
+		table.grid > tbody > tr > td {
+		    /*border-bottom: 1px solid #CCCCCC;
+		    border-right: 1px solid #CCCCCC;*/
+		    width: 20px;
+			height: 20px;
+		}
+		
+		.but {
+		    background-color: #87381F;
+		    border: 1px solid #DAD1C5;
+		    color: #fff;
+		    cursor: pointer;
+		    font-family: Tahoma;
+		    font-size: 11px;
+		    font-weight: bold;
+		    margin-right: 7px;
+		    padding: 4px;
+		    text-decoration: none;
+		}
+		td.snake {
+			background-color: #000;
+		}
+		td.cherry {
+			background-color: #ff0000;
+		}
+		#divScore{
+			margin: 20px 0px 0px 80px;
+		}
+		#spCherryCount {
+			color:blue;
+		}
+	</style>
+</head>
+<body>
+	<div id="page">
+		<h1 style="text-align:center;">Snake Game</h1><hr/>
+		<table id="tbl" border="0" cellpadding="0" cellspacing="0" class="grid">	
+		</table>
+		<div id="divScore">
+			<table border="0" cellpadding="5" cellspacing="0" width="100%">
+				<tr>
+					<td>
+						<input type="button" value="Start" class="but" onclick="startGame()" />
+						<input type="button" value="Stop" class="but" onclick="stopGame()" />
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<b>Speed:&nbsp;</b>
+						<select id="drpSpeed" name="drpSpeed" onchange="speed = this.value;jQuery('input').eq(0).focus();">
+							<option value="600">Slow</option>
+							<option value="300" selected="true">Medium</option>
+							<option value="100">Fast</option>
+						</select>
+					</td>
+					<td><b>Total Cherry:&nbsp;</b><span id="spCherryCount">0</span></td>
+				</tr>
+				<tr>
+					<td><b>Note: </b>Use keyboard arrow key to navigate snake</td>
+					<td><b>By: </b>Nirav Patel</td>
+				</tr>	
+			</table>
+			
+		</div>
+	</div>
+</body>
+</html>
