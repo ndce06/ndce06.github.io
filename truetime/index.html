@@ -56,36 +56,41 @@
 					};
 
 					this.getSummary = function(days) {
-						var totalDay = 0, totalMM = 0, msg = "";
-						var requiredMM = 2700; // 45 hrs = 2700 minutes
+						var totalDay = 0, workingDay = 0, totalMM = 0, msg = "";
 						angular.forEach(days, function(d){
 							if(!d.isHoliday && d.hh && d.mm && !isNaN(d.hh) && !isNaN(d.mm)) {
 								totalDay++;
 								totalMM += toMinutes(d.hh, d.mm);
 							}
+							if(!d.isHoliday) {
+								workingDay++;
+							}
 						});
-
+						workingDay = (workingDay > 5) ? 5 : workingDay;
+						var requiredMM = workingDay * 9 * 60; // 45 hrs = 2700 minutes
 						totalDay = (totalDay > 5) ? 5 : totalDay;
 						if(totalDay === 0) {
 							return '';
 						}
 						var avgMM = Math.floor(totalMM / totalDay);
 
-						var pendingDays = 5 - totalDay;
+						var pendingDays = workingDay - totalDay;
 						var avgPendingMM = 0;
 						var pendingMM = requiredMM - totalMM;
 						pendingMM = (pendingMM > 0) ? pendingMM : 0;
 
 						if(pendingDays > 0) {
 							avgPendingMM = Math.floor(pendingMM / pendingDays);
+						} else if(pendingMM > 0) {
+							avgPendingMM = pendingMM;
 						}
 
 						var avg = toHHMM(avgMM);
 						var pending = toHHMM(avgPendingMM);
 						msg = "Your average time is : <b>" + avg.hh + " hour(s) and " + avg.mm + " minute(s)</b>";
 						if(pendingMM > 0) {
-							msg += "<br> You need <b>" + pending.hh + " hour(s) and " + pending.mm + " minute(s)</b> each day.";
-						} 
+							msg += (pendingDays > 0) ? "<br> You need <b>" + pending.hh + " hour(s) and " + pending.mm + " minute(s)</b> each day." : "<br> You need <b>" + pending.hh + " hour(s) and " + pending.mm + " minute(s)</b>";
+						}
 
 						return {
 							avg : avg,
@@ -99,10 +104,23 @@
 					var self = this;
 					self.days = trueTime.getCurrentWeekDays();
 					self.summary = {};
+					self.timeString = "9:01238:59249:19252627";
 
 					self.getSummary = function() {
 						self.summary = trueTime.getSummary(self.days);
 						return self.summary;
+					}
+
+					self.calculate = function() {
+						if(self.timeString && self.timeString !== "") {
+							var timeArr = self.timeString.match(/[0-9]:+[0-9][0-9]/g);
+
+							for(var i=0; i < timeArr.length; i++) {
+								var t = timeArr[i].split(":");
+								self.days["day_"+i].hh = parseInt(t[0]);
+								self.days["day_"+i].mm = parseInt(t[1]);
+							}
+						}
 					}
 				}]);
 		</script>
@@ -110,11 +128,20 @@
 	<body ng-app="appTrueTime">
 		<div class="container" ng-controller="trueTimeController as ttCtrl">
 			<div class="page-header">
-				<h1>True Time <small>Calculate how much time need to spend in office</small></h1>
+				<h1>Time in Office <small>Calculate how much time need to spend in office</small></h1>
 			</div>
 			<div class="panel panel-primary">
 				<div class="panel-heading">
-					<h3 class="panel-title">True Time</h3>
+					<h3 class="panel-title">Past your time data</h3>
+				</div>
+				<div class="panel-body">
+					<textarea rows="2" cols="100" ng-model="ttCtrl.timeString" placeholder="paste your weekly time here and hit Calculate"></textarea><br>
+					<input type="button" value="Calculate" class="btn btn-primary" ng-click="ttCtrl.calculate()" />
+				</div>
+			</div>
+			<div class="panel panel-primary">
+				<div class="panel-heading">
+					<h3 class="panel-title">Summary</h3>
 				</div>
 				<div class="panel-body">
 					<div class="table-responsive">
@@ -124,7 +151,7 @@
 									<th>Day</th> 
 									<th>Holiday</th> 
 									<th>Time (HH:MM)</th> 
-									<th>Remarks</th> 
+									<th width="40%">Remarks</th> 
 								</tr> 
 							</thead> 
 							<tbody> 
